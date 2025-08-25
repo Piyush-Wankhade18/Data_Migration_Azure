@@ -1,0 +1,35 @@
+Sample sql database
+https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=ssms
+
+For lookup activity
+select s.name as SchemaName,
+t.name as TableName 
+from sys.tables t 
+inner join sys.schemas s 
+on t.schema_id = s.schema_id
+where s.name='SalesLT'
+
+@activity('Look for all tables').output.value
+
+How they should be stored in Tgt database
+@{concat('Select * From',item().SchemaName,'.', item().TableName)}
+
+@item().SchemaName
+@item().TableName
+
+
+@{concat(dataset().schemaname,'/',dataset().tablename)}
+
+@{concat(dataset().tablename,'.parquet')}
+
+Mount Code for Databricks similar for silver and gold as well
+configs = {
+  "fs.azure.account.auth.type": "CustomAccessToken",
+  "fs.azure.account.custom.token.provider.class": spark.conf.get("spark.databricks.passthrough.adls.gen2.tokenProviderClassName")
+}
+
+# Optionally, you can add <directory-name> to the source URI of your mount point.
+dbutils.fs.mount(
+  source = "abfss://bronze@deazuredatalakegen2.dfs.core.windows.net/",
+  mount_point = "/mnt/bronze",
+  extra_configs = configs)
